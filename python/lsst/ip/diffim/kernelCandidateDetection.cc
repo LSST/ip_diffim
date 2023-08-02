@@ -47,7 +47,7 @@ namespace {
 template <typename PixelT>
 void declareKernelCandidateDetection(lsst::cpputils::python::WrapperCollection &wrappers, std::string const &suffix) {
     using PyKernelCandidateDetection =
-            py::class_<KernelCandidateDetection<PixelT>, std::shared_ptr<KernelCandidateDetection<PixelT>>>;
+            py::class_<KernelCandidateDetection<PixelT>>;
 
     std::string name = "KernelCandidateDetection" + suffix;
     wrappers.wrapType(PyKernelCandidateDetection(wrappers.module, name.c_str()), [](auto &mod, auto &cls) {

@@ -51,7 +51,7 @@ namespace {
 template <typename PixelT>
 void declareKernelPca(lsst::cpputils::python::WrapperCollection &wrappers, std::string const& suffix) {
     using ImageT = afw::image::Image<PixelT>;
-    using PyClass = py::class_<KernelPca<ImageT>, std::shared_ptr<KernelPca<ImageT>>, afw::image::ImagePca<ImageT>>;
+    using PyClass = py::class_<KernelPca<ImageT>, afw::image::ImagePca<ImageT>>;
 
     std::string name = "KernelPca" + suffix;
     wrappers.wrapType(PyClass(wrappers.module, name.c_str()), [](auto &mod, auto &cls) {
@@ -71,8 +71,7 @@ void declareKernelPca(lsst::cpputils::python::WrapperCollection &wrappers, std::
  */
 template <typename PixelT>
 void declareKernelPcaVisitor(lsst::cpputils::python::WrapperCollection &wrappers, std::string const& suffix) {
-    using PyClass = py::class_<KernelPcaVisitor<PixelT>, std::shared_ptr<KernelPcaVisitor<PixelT>>,
-               afw::math::CandidateVisitor>;
+    using PyClass = py::class_<KernelPcaVisitor<PixelT>, afw::math::CandidateVisitor>;
 
     std::string name = "KernelPcaVisitor" + suffix;
     // note that KernelPcaVisitor<PixelT>::ImageT

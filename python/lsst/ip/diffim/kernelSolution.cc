@@ -43,7 +43,7 @@ namespace {
  * Wrap KernelSolution
  */
 void declareKernelSolution(lsst::cpputils::python::WrapperCollection &wrappers) {
-    using PyKernelSolution = py::class_<KernelSolution, std::shared_ptr<KernelSolution>>;
+    using PyKernelSolution = py::class_<KernelSolution>;
 
     wrappers.wrapType(PyKernelSolution(wrappers.module, "KernelSolution"), [](auto &mod, auto &cls) {
         cls.def(py::init<Eigen::MatrixXd, Eigen::VectorXd, bool>(), "mMat"_a, "bVec"_a, "fitForBackground"_a);
@@ -93,8 +93,7 @@ void declareKernelSolution(lsst::cpputils::python::WrapperCollection &wrappers) 
  */
 template <typename InputT>
 void declareStaticKernelSolution(lsst::cpputils::python::WrapperCollection &wrappers, std::string const &suffix) {
-    using PyStaticKernelSolution =
-            py::class_<StaticKernelSolution<InputT>, std::shared_ptr<StaticKernelSolution<InputT>>, KernelSolution>;
+    using PyStaticKernelSolution = py::class_<StaticKernelSolution<InputT>, KernelSolution>;
     std::string name = ("StaticKernelSolution" + suffix);
     wrappers.wrapType(PyStaticKernelSolution(wrappers.module, name.c_str()), [](auto &mod, auto &cls) {
         cls.def(py::init<lsst::afw::math::KernelList const &, bool>(), "basisList"_a, "fitForBackground"_a);
@@ -119,8 +118,7 @@ void declareStaticKernelSolution(lsst::cpputils::python::WrapperCollection &wrap
  */
 template <typename InputT>
 void declareMaskedKernelSolution(lsst::cpputils::python::WrapperCollection &wrappers, std::string const &suffix) {
-    using PyMaskedKernelSolution = py::class_<MaskedKernelSolution<InputT>, std::shared_ptr<MaskedKernelSolution<InputT>>,
-               StaticKernelSolution<InputT>>;
+    using PyMaskedKernelSolution = py::class_<MaskedKernelSolution<InputT>, StaticKernelSolution<InputT>>;
     std::string name = "MaskedKernelSolution" + suffix;
     wrappers.wrapType(PyMaskedKernelSolution(wrappers.module, name.c_str()), [](auto &mod, auto &cls) {
         cls.def(py::init<lsst::afw::math::KernelList const &, bool>(), "basisList"_a, "fitForBackground"_a);
@@ -144,8 +142,7 @@ void declareMaskedKernelSolution(lsst::cpputils::python::WrapperCollection &wrap
 template <typename InputT>
 void declareRegularizedKernelSolution(lsst::cpputils::python::WrapperCollection &wrappers, std::string const &suffix) {
     using PyRegularizedKernelSolution =
-            py::class_<RegularizedKernelSolution<InputT>,
-                    std::shared_ptr<RegularizedKernelSolution<InputT>>,StaticKernelSolution<InputT>>;
+            py::class_<RegularizedKernelSolution<InputT>, StaticKernelSolution<InputT>>;
 
     std::string name = "RegularizedKernelSolution" + suffix;
     wrappers.wrapType(PyRegularizedKernelSolution(wrappers.module, "RegularizedKernelSolution"), [](auto &mod, auto &cls) {
@@ -165,8 +162,7 @@ void declareRegularizedKernelSolution(lsst::cpputils::python::WrapperCollection 
  * Wrap SpatialKernelSolution
  */
 void declareSpatialKernelSolution(lsst::cpputils::python::WrapperCollection &wrappers) {
-    using PySpatialKernelSolution =
-            py::class_<SpatialKernelSolution, std::shared_ptr<SpatialKernelSolution>, KernelSolution> ;
+    using PySpatialKernelSolution = py::class_<SpatialKernelSolution, KernelSolution> ;
 
     wrappers.wrapType(PySpatialKernelSolution(wrappers.module, "SpatialKernelSolution"), [](auto &mod, auto &cls) {
         cls.def(py::init<lsst::afw::math::KernelList const &, lsst::afw::math::Kernel::SpatialFunctionPtr,

@@ -48,7 +48,7 @@ namespace {
  */
 template <typename PixelT>
 void declareImageStatistics(lsst::cpputils::python::WrapperCollection &wrappers, std::string const &suffix) {
-    using PyImageStatistics =  py::class_<ImageStatistics<PixelT>, std::shared_ptr<ImageStatistics<PixelT>>>;
+    using PyImageStatistics =  py::class_<ImageStatistics<PixelT>>;
 
     std::string name = "ImageStatistics" + suffix;
     wrappers.wrapType(PyImageStatistics(wrappers.module, name.c_str()), [](auto &mod, auto &cls) {

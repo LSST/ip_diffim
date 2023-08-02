@@ -41,7 +41,7 @@ namespace diffim {
 namespace {
 
 void declareDipoleCentroidControl(lsst::cpputils::python::WrapperCollection &wrappers) {
-    using PyDipoleCentroidControl = py::class_<DipoleCentroidControl, std::shared_ptr<DipoleCentroidControl>>;
+    using PyDipoleCentroidControl = py::class_<DipoleCentroidControl>;
 
     wrappers.wrapType(PyDipoleCentroidControl(wrappers.module, "DipoleCentroidControl"), [](auto &mod, auto &cls) {
         cls.def(py::init<>());
@@ -49,7 +49,7 @@ void declareDipoleCentroidControl(lsst::cpputils::python::WrapperCollection &wra
 }
 
 void declareDipoleFluxControl(lsst::cpputils::python::WrapperCollection &wrappers) {
-    using PyDipoleFluxControl = py::class_<DipoleFluxControl, std::shared_ptr<DipoleFluxControl>>;
+    using PyDipoleFluxControl = py::class_<DipoleFluxControl>;
 
     wrappers.wrapType(PyDipoleFluxControl(wrappers.module, "DipoleFluxControl"), [](auto &mod, auto &cls) {
         cls.def(py::init<>());
@@ -58,7 +58,7 @@ void declareDipoleFluxControl(lsst::cpputils::python::WrapperCollection &wrapper
 
 void declareDipolePsfFluxControl(lsst::cpputils::python::WrapperCollection &wrappers) {
     using PyPsfDipoleFluxControl =
-            py::class_<PsfDipoleFluxControl, std::shared_ptr<PsfDipoleFluxControl>, DipoleFluxControl>;
+            py::class_<PsfDipoleFluxControl, DipoleFluxControl>;
     wrappers.wrapType(PyPsfDipoleFluxControl(wrappers.module, "PsfDipoleFluxControl"), [](auto &mod, auto &cls) {
         cls.def(py::init<>());
 
@@ -72,7 +72,7 @@ void declareDipolePsfFluxControl(lsst::cpputils::python::WrapperCollection &wrap
 void declareDipoleCentroidAlgorithm(lsst::cpputils::python::WrapperCollection &wrappers) {
     // Abstract class, so add a leading underscore to Python name and do not wrap constructor
     using PyDipoleCentroidAlgorithm =
-            py::class_<DipoleCentroidAlgorithm, std::shared_ptr<DipoleCentroidAlgorithm>, meas::base::SimpleAlgorithm>;
+            py::class_<DipoleCentroidAlgorithm, meas::base::SimpleAlgorithm>;
 
     wrappers.wrapType(PyDipoleCentroidAlgorithm(wrappers.module, "_DipoleCentroidAlgorithm"), [](auto &mod, auto &cls) {
         cls.attr("FAILURE") = py::cast(DipoleCentroidAlgorithm::FAILURE);
@@ -89,7 +89,7 @@ void declareDipoleCentroidAlgorithm(lsst::cpputils::python::WrapperCollection &w
 void declareDipoleFluxAlgorithm(lsst::cpputils::python::WrapperCollection &wrappers) {
     // Abstract class, so add a leading underscore to Python name and do not wrap constructor
     using PyDipoleFluxAlgorithm =
-            py::class_<DipoleFluxAlgorithm, std::shared_ptr<DipoleFluxAlgorithm>, meas::base::SimpleAlgorithm>;
+            py::class_<DipoleFluxAlgorithm, meas::base::SimpleAlgorithm>;
     wrappers.wrapType(PyDipoleFluxAlgorithm(wrappers.module, "_DipoleFluxAlgorithm"), [](auto &mod, auto &cls) {
         cls.attr("FAILURE") = py::cast(DipoleFluxAlgorithm::FAILURE);
         cls.attr("POS_FLAG") = py::cast(DipoleFluxAlgorithm::POS_FLAG);
@@ -103,7 +103,7 @@ void declareDipoleFluxAlgorithm(lsst::cpputils::python::WrapperCollection &wrapp
 }
 
 void declareNaiveDipoleFlux(lsst::cpputils::python::WrapperCollection &wrappers) {
-    using PyNaiveDipoleFlux = py::class_<NaiveDipoleFlux, std::shared_ptr<NaiveDipoleFlux>, DipoleFluxAlgorithm>;
+    using PyNaiveDipoleFlux = py::class_<NaiveDipoleFlux, DipoleFluxAlgorithm>;
 
     wrappers.wrapType(PyNaiveDipoleFlux(wrappers.module, "NaiveDipoleFlux"), [](auto &mod, auto &cls) {
         cls.def(py::init<NaiveDipoleFlux::Control const &, std::string const &, afw::table::Schema &>(), "ctrl"_a,
@@ -116,7 +116,7 @@ void declareNaiveDipoleFlux(lsst::cpputils::python::WrapperCollection &wrappers)
 
 void declareNaiveDipoleCentroid(lsst::cpputils::python::WrapperCollection &wrappers) {
     using PyNaiveDipoleCentroid =
-            py::class_<NaiveDipoleCentroid, std::shared_ptr<NaiveDipoleCentroid>, DipoleCentroidAlgorithm>;
+            py::class_<NaiveDipoleCentroid, DipoleCentroidAlgorithm>;
     wrappers.wrapType(PyNaiveDipoleCentroid(wrappers.module, "NaiveDipoleCentroid"), [](auto &mod, auto &cls) {
         cls.def(py::init<NaiveDipoleCentroid::Control const &, std::string const &, afw::table::Schema &>(),
                 "ctrl"_a, "name"_a, "schema"_a);
@@ -132,7 +132,7 @@ void declareNaiveDipoleCentroid(lsst::cpputils::python::WrapperCollection &wrapp
 }
 
 void declarePsfDipoleFlux(lsst::cpputils::python::WrapperCollection &wrappers) {
-    using PyPsfDipoleFlux =  py::class_<PsfDipoleFlux, std::shared_ptr<PsfDipoleFlux>, DipoleFluxAlgorithm>;
+    using PyPsfDipoleFlux =  py::class_<PsfDipoleFlux, DipoleFluxAlgorithm>;
 
     wrappers.wrapType(PyPsfDipoleFlux(wrappers.module, "PsfDipoleFlux"), [](auto &mod, auto &cls) {
         cls.def(py::init<PsfDipoleFlux::Control const &, std::string const &, afw::table::Schema &>(), "ctrl"_a,

@@ -50,7 +50,7 @@ template <typename PixelT>
 void declareKernelSumVisitor(lsst::cpputils::python::WrapperCollection &wrappers, std::string const& suffix) {
     using Class = KernelSumVisitor<PixelT>;
 
-    using PyClass = py::class_<Class, std::shared_ptr<Class>, afw::math::CandidateVisitor>;
+    using PyClass = py::class_<Class, afw::math::CandidateVisitor>;
     std::string name = "KernelSumVisitor" + suffix;
     auto clsDef = wrappers.wrapType(PyClass(wrappers.module, name.c_str()), [](auto &mod, auto &cls) {
         cls.def(py::init<daf::base::PropertySet const &>(), "ps"_a);

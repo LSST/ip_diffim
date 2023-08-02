@@ -54,8 +54,7 @@ namespace {
  */
 template <typename PixelT>
 void declareBuildSingleKernelVisitor(lsst::cpputils::python::WrapperCollection &wrappers, std::string const& suffix) {
-    using PyClass = py::class_<BuildSingleKernelVisitor<PixelT>, std::shared_ptr<BuildSingleKernelVisitor<PixelT>>,
-               afw::math::CandidateVisitor>;
+    using PyClass = py::class_<BuildSingleKernelVisitor<PixelT>, afw::math::CandidateVisitor>;
     std::string name = "BuildSingleKernelVisitor" + suffix;
 
     wrappers.wrapType(PyClass(wrappers.module, name.c_str()), [](auto &mod, auto &cls) {

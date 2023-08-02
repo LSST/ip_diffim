@@ -53,8 +53,7 @@ namespace {
 template <typename PixelT>
 void declareBuildSpatialKernelVisitor(lsst::cpputils::python::WrapperCollection &wrappers, std::string const& suffix) {
     std::string name = "BuildSpatialKernelVisitor" + suffix;
-    using PyClass = py::class_<BuildSpatialKernelVisitor<PixelT>, std::shared_ptr<BuildSpatialKernelVisitor<PixelT>>,
-               afw::math::CandidateVisitor>;
+    using PyClass = py::class_<BuildSpatialKernelVisitor<PixelT>, afw::math::CandidateVisitor>;
     wrappers.wrapType(PyClass(wrappers.module, name.c_str()), [](auto &mod, auto &cls) {
         cls.def(py::init<afw::math::KernelList, geom::Box2I const &, daf::base::PropertySet const &>(), "basisList"_a,
                 "regionBBox"_a, "ps"_a);
