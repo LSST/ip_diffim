@@ -37,7 +37,7 @@ __all__ = ["GetTemplateTask", "GetTemplateConfig",
 
 
 class GetTemplateConnections(pipeBase.PipelineTaskConnections,
-                             dimensions=("instrument", "visit", "detector", "skymap"),
+                             dimensions=("instrument", "visit", "detector"),
                              defaultTemplates={"coaddName": "goodSeeing",
                                                "warpTypeSuffix": "",
                                                "fakesType": ""}):
