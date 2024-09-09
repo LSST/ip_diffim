@@ -164,6 +164,7 @@ class MakeKernelTask(PsfMatchTask):
         return lsst.pipe.base.Struct(
             psfMatchingKernel=psfMatchingKernel,
             backgroundModel=backgroundModel,
+            spatialSolution=spatialSolution,
         )
 
     def selectKernelSources(self, template, science, candidateList=None, preconvolved=False):

@@ -23,11 +23,12 @@
 
 
 __all__ = ["evaluateMeanPsfFwhm", "getPsfFwhm", "getKernelCenterDisplacement",
-           ]
+           "divideExposureByPatches"]
 
 import itertools
 import numpy as np
 import lsst.geom as geom
+import lsst.afw.geom as afwGeom
 import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
 from lsst.pex.exceptions import InvalidParameterError, RangeError
@@ -331,3 +332,68 @@ def evaluateMaskFraction(mask, maskPlane):
     """
     nMaskSet = np.count_nonzero((mask.array & mask.getPlaneBitMask(maskPlane)))
     return nMaskSet/mask.array.size
+
+
+def divideExposureByPatches(exposure, skymap, overlapThreshold=0.1):
+    """Summary
+
+    Parameters
+    ----------
+    exposure : `lsst.afw.image.Exposure`
+        Description
+    skymap : `lsst.skymap.SkyMap`
+        Description
+    overlapThreshold : `float`, optional
+        Description
+
+    Returns
+    -------
+    patchCandidates : `list` of `lsst.skymap.PatchInfo`
+        Description
+    """
+    corners = exposure.wcs.pixelToSky(geom.Box2D(exposure.getBBox()).getCorners())
+    tractList = skymap.findTractPatchList(corners)
+    detectorPolygon = geom.Box2D(exposure.getBBox())
+    area = exposure.getBBox().getArea()
+    patchCandidates = []
+    overlapFraction = []
+    tractCoverageList = []
+    for tractInfo, patchList in tractList:
+        tractCheck = [tractInfo.contains(exposure.wcs.pixelToSky(corner))
+                      for corner in detectorPolygon.getCorners()]
+        tractCoverage = 0
+        if np.all(tractCheck):
+            for patch in patchList:
+                patchCorners = patch.wcs.pixelToSky(geom.Box2D(patch.getOuterBBox()).getCorners())
+                patchPolygon = afwGeom.Polygon(exposure.wcs.skyToPixel(patchCorners))
+                overlappingArea = patchPolygon.intersectionSingle(detectorPolygon).calculateArea()
+                if overlappingArea/area >= overlapThreshold*2:
+                    tractCoverage += overlappingArea/area
+        # Coverage metric can exceed 1 since we are using the outer BBox.
+        tractCoverageList.append(np.min([tractCoverage, 1]))
+    if np.max(tractCoverageList) > 0:
+        print(tractCoverageList)
+        tractUse = np.argmax(tractCoverageList)
+    else:
+        tractContainsList = []
+        for tractInfo, patchList in tractList:
+            tractCheck = tractInfo.contains(exposure.wcs.pixelToSky(detectorPolygon.getCenter()))
+            tractContainsList.append(tractCheck)
+        tractUse = np.argmax(tractContainsList)
+        
+    tractInfo, patchList = tractList.pop(tractUse)
+    for patch in patchList:
+        # Switch to using the inner BBox
+        patchCorners = patch.wcs.pixelToSky(geom.Box2D(patch.getInnerBBox()).getCorners())
+        patchPolygon = afwGeom.Polygon(exposure.wcs.skyToPixel(patchCorners))
+        if patchPolygon.overlaps(detectorPolygon):
+            overlappingArea = patchPolygon.intersectionSingle(detectorPolygon).calculateArea()
+        else:
+            overlappingArea = 0
+        if overlappingArea/area >= overlapThreshold:
+            patchCandidates.append(patch)
+            overlapFraction.append(overlappingArea/area)
+    
+    # Sort the patches by overlap fraction, largest last
+    patchCandidates = [p[1] for p in sorted(zip(overlapFraction, patchCandidates), reverse=False)]
+    return patchCandidates

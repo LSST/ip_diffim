@@ -23,15 +23,17 @@ from astropy import units as u
 import numpy as np
 
 import lsst.afw.detection as afwDetection
+import lsst.afw.geom as afwGeom
 import lsst.afw.image
 import lsst.afw.math
 import lsst.geom
-from lsst.ip.diffim.utils import evaluateMeanPsfFwhm, getPsfFwhm
+from lsst.ip.diffim.utils import evaluateMeanPsfFwhm, getPsfFwhm, divideExposureByPatches
 from lsst.meas.algorithms import ScaleVarianceTask, ScienceSourceSelectorTask
 import lsst.pex.config
 import lsst.pipe.base
 import lsst.pex.exceptions
 from lsst.pipe.base import connectionTypes
+from lsst.skymap import BaseSkyMap
 from . import MakeKernelTask, DecorrelateALKernelTask
 from lsst.utils.timer import timeMethod
 
@@ -63,6 +65,13 @@ class SubtractInputConnections(lsst.pipe.base.PipelineTaskConnections,
         dimensions=("instrument", "visit", "detector"),
         storageClass="SourceCatalog",
         name="{fakesType}src"
+    )
+    skymap = connectionTypes.Input(
+        doc="Input definition of geometry/bbox and projection/wcs for template exposures",
+        name=BaseSkyMap.SKYMAP_DATASET_TYPE_NAME,
+        dimensions=("skymap", ),
+        storageClass="SkyMap",
+        minimum=0,
     )
     visitSummary = connectionTypes.Input(
         doc=("Per-visit catalog with final calibration objects. "
@@ -342,7 +351,7 @@ class AlardLuptonSubtractTask(lsst.pipe.base.PipelineTask):
         return exposure
 
     @timeMethod
-    def run(self, template, science, sources, visitSummary=None):
+    def run(self, template, science, sources, skymap=None, visitSummary=None):
         """PSF match, subtract, and decorrelate two images.
 
         Parameters
@@ -355,6 +364,9 @@ class AlardLuptonSubtractTask(lsst.pipe.base.PipelineTask):
             Identified sources on the science exposure. This catalog is used to
             select sources in order to perform the AL PSF matching on stamp
             images around them.
+        skymap : `lsst.skymap.SkyMap`, optional
+            Input definition of geometry/bbox and projection/wcs for
+            template exposures.
         visitSummary : `lsst.afw.table.ExposureCatalog`, optional
             Exposure catalog with external calibrations to be applied. Catalog
             uses the detector id for the catalog id, sorted on id for fast
@@ -379,6 +391,7 @@ class AlardLuptonSubtractTask(lsst.pipe.base.PipelineTask):
             If an unsupported convolution mode is supplied.
         RuntimeError
             If there are too few sources to calculate the PSF matching kernel.
+
         lsst.pipe.base.NoWorkFound
             Raised if fraction of good pixels, defined as not having NO_DATA
             set, is less then the configured requiredTemplateFraction
@@ -456,17 +469,62 @@ class AlardLuptonSubtractTask(lsst.pipe.base.PipelineTask):
             convolveTemplate = False
         else:
             raise RuntimeError("Cannot handle AlardLuptonSubtract mode: %s", self.config.mode)
-
         try:
             sourceMask = science.mask.clone()
             sourceMask.array |= template[science.getBBox()].mask.array
             selectSources = self._sourceSelector(sources, sourceMask)
             if convolveTemplate:
                 self.metadata["convolvedExposure"] = "Template"
-                subtractResults = self.runConvolveTemplate(template, science, selectSources)
+                # subtractResults = self.runConvolveTemplate(template, science, selectSources)
             else:
                 self.metadata["convolvedExposure"] = "Science"
-                subtractResults = self.runConvolveScience(template, science, selectSources)
+                # subtractResults = self.runConvolveScience(template, science, selectSources)
+            patches = divideExposureByPatches(template, skymap, overlapThreshold=0.1)
+            patchWeights = []
+            matchingKernels = []
+            matchedTemplates = []
+            diffims = []
+            matchedTemplate = np.zeros_like(science.image.array)
+            difference = np.zeros_like(science.image.array)
+            totalWeight = np.zeros_like(science.image.array)
+            for patch in patches:
+                patchCorners = patch.wcs.pixelToSky(lsst.geom.Box2D(patch.getInnerBBox()).getCorners())
+                patchPolygon = afwGeom.Polygon(template.wcs.skyToPixel(patchCorners))
+                inds = patchPolygon.contains(selectSources.getX(), selectSources.getY())
+                selectSources1 = selectSources[inds]
+                # patchOuterCorners = patch.wcs.pixelToSky(lsst.geom.Box2D(patch.getOuterBBox()).getCorners())
+                # patchOuterPolygon = afwGeom.Polygon(template.wcs.skyToPixel(patchOuterCorners))
+                # patchBBox = lsst.geom.Box2I(patchOuterPolygon.getBBox())
+                # boxT = template.getBBox()
+                # boxT = boxT.clippedTo(patchBBox)
+
+                # boxS = science.getBBox()
+                # boxS = boxS.clippedTo(patchBBox)
+                if convolveTemplate:
+                    # self.metadata.add("convolvedExposure", "Template")
+                    subtractResults = self.runConvolveTemplate(template, science, selectSources1)
+                else:
+                    # self.metadata.add("convolvedExposure", "Science")
+                    subtractResults = self.runConvolveScience(template, science, selectSources1)
+                patchWeight = patchPolygon.createImage(template.getBBox())
+                patchWeightConvolved = lsst.afw.image.ImageF(template.getBBox())
+                lsst.afw.math.convolve(patchWeightConvolved, patchWeight, science.psf.getKernel(),
+                                       self.convolutionControl)
+                weight = patchWeightConvolved[science.getBBox()].array
+                patchWeights.append(weight)
+                matchingKernels.append(subtractResults.psfMatchingKernel)
+                matchedTemplates.append(subtractResults.matchedTemplate)
+                diffims.append(subtractResults.difference)
+                matchedTemplate += subtractResults.matchedTemplate.image.array*weight
+                difference += subtractResults.difference.image.array*weight
+                totalWeight += weight
+            inds = totalWeight > 0
+            matchedTemplate[inds] /= totalWeight[inds]
+            difference[inds] /= totalWeight[inds]
+            matchedTemplate[~inds] = subtractResults.matchedTemplate.image.array[~inds]
+            difference[~inds] = subtractResults.difference.image.array[~inds]
+            subtractResults.matchedTemplate.image.array = matchedTemplate
+            subtractResults.difference.image.array = difference
 
         except (RuntimeError, lsst.pex.exceptions.Exception) as e:
             self.log.warning("Failed to match template. Checking coverage")
@@ -1012,7 +1070,7 @@ class AlardLuptonPreconvolveSubtractTask(AlardLuptonSubtractTask):
     ConfigClass = AlardLuptonPreconvolveSubtractConfig
     _DefaultName = "alardLuptonPreconvolveSubtract"
 
-    def run(self, template, science, sources, visitSummary=None):
+    def run(self, template, science, sources, skymap=None, visitSummary=None):
         """Preconvolve the science image with its own PSF,
         convolve the template image with a PSF-matching kernel and subtract
         from the preconvolved science image.
@@ -1029,6 +1087,9 @@ class AlardLuptonPreconvolveSubtractTask(AlardLuptonSubtractTask):
             Identified sources on the science exposure. This catalog is used to
             select sources in order to perform the AL PSF matching on stamp
             images around them.
+        skymap : `lsst.skymap.SkyMap`, optional
+            Input definition of geometry/bbox and projection/wcs for
+            template exposures.
         visitSummary : `lsst.afw.table.ExposureCatalog`, optional
             Exposure catalog with complete external calibrations. Catalog uses
             the detector id for the catalog id, sorted on id for fast lookup.
