@@ -55,14 +55,14 @@ class SubtractInputConnections(lsst.pipe.base.PipelineTaskConnections,
         doc="Input science exposure to subtract from.",
         dimensions=("instrument", "visit", "detector"),
         storageClass="ExposureF",
-        name="{fakesType}calexp"
+        name="{fakesType}initial_pvi"
     )
     sources = connectionTypes.Input(
         doc="Sources measured on the science exposure; "
             "used to select sources for making the matching kernel.",
         dimensions=("instrument", "visit", "detector"),
         storageClass="SourceCatalog",
-        name="{fakesType}src"
+        name="{fakesType}initial_stars_footprints_detector"
     )
     visitSummary = connectionTypes.Input(
         doc=("Per-visit catalog with final calibration objects. "

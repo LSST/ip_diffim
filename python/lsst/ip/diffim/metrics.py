@@ -43,7 +43,7 @@ class NumberSciSourcesMetricConnections(
 ):
     sources = connectionTypes.Input(
         doc="The catalog of science sources.",
-        name="src",
+        name="initial_stars_footprints_detector",
         storageClass="SourceCatalog",
         dimensions={"instrument", "visit", "detector"},
     )
@@ -98,7 +98,7 @@ class FractionDiaSourcesToSciSourcesMetricConnections(
                           "metric": "fracDiaSourcesToSciSources"}):
     sciSources = connectionTypes.Input(
         doc="The catalog of science sources.",
-        name="src",
+        name="initial_stars_footprints_detector",
         storageClass="SourceCatalog",
         dimensions={"instrument", "visit", "detector"},
     )

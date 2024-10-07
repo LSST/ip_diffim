@@ -46,7 +46,7 @@ class SpatiallySampledMetricsConnections(pipeBase.PipelineTaskConnections,
         doc="Input science exposure.",
         dimensions=("instrument", "visit", "detector"),
         storageClass="ExposureF",
-        name="{fakesType}calexp"
+        name="{fakesType}initial_pvi"
     )
     matchedTemplate = pipeBase.connectionTypes.Input(
         doc="Warped and PSF-matched template used to create the difference image.",

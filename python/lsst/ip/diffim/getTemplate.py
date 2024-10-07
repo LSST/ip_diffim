@@ -44,14 +44,14 @@ class GetTemplateConnections(pipeBase.PipelineTaskConnections,
                                                "warpTypeSuffix": "",
                                                "fakesType": ""}):
     bbox = pipeBase.connectionTypes.Input(
-        doc="BBoxes of calexp used determine geometry of output template",
-        name="{fakesType}calexp.bbox",
+        doc="Bounding box of exposure used determine geometry of output template.",
+        name="{fakesType}initial_pvi.bbox",
         storageClass="Box2I",
         dimensions=("instrument", "visit", "detector"),
     )
     wcs = pipeBase.connectionTypes.Input(
-        doc="WCS of the calexp that we want to fetch the template for",
-        name="{fakesType}calexp.wcs",
+        doc="WCS of the exposure that we want to fetch the template for.",
+        name="{fakesType}initial_pvi.wcs",
         storageClass="Wcs",
         dimensions=("instrument", "visit", "detector"),
     )
@@ -437,8 +437,8 @@ class GetDcrTemplateConnections(GetTemplateConnections,
                                                   "warpTypeSuffix": "",
                                                   "fakesType": ""}):
     visitInfo = pipeBase.connectionTypes.Input(
-        doc="VisitInfo of calexp used to determine observing conditions.",
-        name="{fakesType}calexp.visitInfo",
+        doc="VisitInfo of exposure used to determine observing conditions.",
+        name="{fakesType}initial_pvi.visitInfo",
         storageClass="VisitInfo",
         dimensions=("instrument", "visit", "detector"),
     )
