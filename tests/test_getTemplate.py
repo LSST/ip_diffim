@@ -209,8 +209,11 @@ class GetTemplateTaskTestCase(lsst.utils.tests.TestCase):
         task = lsst.ip.diffim.GetTemplateTask()
         # Restrict to tract 0, since the box fits in just that tract.
         # Task modifies the input bbox, so pass a copy.
-        result = task.run({0: self.patches[0]}, lsst.geom.Box2I(box),
-                          self.exposure.wcs, {0: self.dataIds[0]}, "a_test")
+        result = task.run(coaddExposures={0: self.patches[0]},
+                          bbox=lsst.geom.Box2I(box),
+                          wcs=self.exposure.wcs,
+                          dataIds={0: self.dataIds[0]},
+                          physical_filter="a_test")
 
         # All 4 patches from tract 0 are included in this template.
         self._checkMetadata(result.template, task.config, box, self.exposure.wcs, 4)
@@ -224,7 +227,11 @@ class GetTemplateTaskTestCase(lsst.utils.tests.TestCase):
         box = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Point2I(180, 180))
         task = lsst.ip.diffim.GetTemplateTask()
         # Task modifies the input bbox, so pass a copy.
-        result = task.run(self.patches, lsst.geom.Box2I(box), self.exposure.wcs, self.dataIds, "a_test")
+        result = task.run(coaddExposures=self.patches,
+                          bbox=lsst.geom.Box2I(box),
+                          wcs=self.exposure.wcs,
+                          dataIds=self.dataIds,
+                          physical_filter="a_test")
 
         # All 4 patches from two tracts are included in this template.
         self._checkMetadata(result.template, task.config, box, self.exposure.wcs, 8)
@@ -236,7 +243,11 @@ class GetTemplateTaskTestCase(lsst.utils.tests.TestCase):
         box = lsst.geom.Box2I(lsst.geom.Point2I(200, 200), lsst.geom.Point2I(600, 600))
         task = lsst.ip.diffim.GetTemplateTask()
         # Task modifies the input bbox, so pass a copy.
-        result = task.run(self.patches, lsst.geom.Box2I(box), self.exposure.wcs, self.dataIds, "a_test")
+        result = task.run(coaddExposures=self.patches,
+                          bbox=lsst.geom.Box2I(box),
+                          wcs=self.exposure.wcs,
+                          dataIds=self.dataIds,
+                          physical_filter="a_test")
 
         # All 4 patches from all 4 tracts are included in this template
         self._checkMetadata(result.template, task.config, box, self.exposure.wcs, 16)
@@ -248,7 +259,11 @@ class GetTemplateTaskTestCase(lsst.utils.tests.TestCase):
         box = lsst.geom.Box2I(lsst.geom.Point2I(1200, 1200), lsst.geom.Point2I(1600, 1600))
         task = lsst.ip.diffim.GetTemplateTask()
         with self.assertRaisesRegex(lsst.pipe.base.NoWorkFound, "No patches found"):
-            task.run(self.patches, lsst.geom.Box2I(box), self.exposure.wcs, self.dataIds, "a_test")
+            task.run(coaddExposures=self.patches,
+                     bbox=lsst.geom.Box2I(box),
+                     wcs=self.exposure.wcs,
+                     dataIds=self.dataIds,
+                     physical_filter="a_test")
 
     def testMissingPatches(self):
         """Test that a missing patch results in an appropriate mask.
@@ -261,7 +276,11 @@ class GetTemplateTaskTestCase(lsst.utils.tests.TestCase):
         box = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Point2I(180, 180))
         task = lsst.ip.diffim.GetTemplateTask()
         # Task modifies the input bbox, so pass a copy.
-        result = task.run(self.patches, lsst.geom.Box2I(box), self.exposure.wcs, self.dataIds, "a_test")
+        result = task.run(coaddExposures=self.patches,
+                          bbox=lsst.geom.Box2I(box),
+                          wcs=self.exposure.wcs,
+                          dataIds=self.dataIds,
+                          physical_filter="a_test")
         no_data = (result.template.mask.array & result.template.mask.getPlaneBitMask("NO_DATA")) != 0
         self.assertTrue(all(np.isnan(result.template.image.array[no_data])))
         self.assertTrue(all(np.isnan(result.template.variance.array[no_data])))
