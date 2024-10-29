@@ -31,6 +31,7 @@ import lsst.geom as geom
 import lsst.afw.geom as afwGeom
 import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
+from lsst.meas.algorithms import SpatialCellCandidate
 from lsst.pex.exceptions import InvalidParameterError, RangeError
 from lsst.utils.logging import getLogger
 
@@ -397,3 +398,33 @@ def divideExposureByPatches(exposure, skymap, overlapThreshold=0.1):
     # Sort the patches by overlap fraction, largest last
     patchCandidates = [p[1] for p in sorted(zip(overlapFraction, patchCandidates), reverse=False)]
     return patchCandidates
+
+
+class MyKernelSpatialCellCandidate(SpatialCellCandidate):
+    def __init__(self, region, kernel):
+        """Initialize with position, region, and kernel.
+
+        Parameters:
+        x, y -- coordinates of the candidate (e.g., centroid of the region)
+        region -- lsst.afw.geom.Polygon defining the valid region for the kernel
+        kernel -- lsst.afw.math.LinearCombinationKernel for this region
+        """
+        super().__init__()
+        self.region = region
+        self.kernel = kernel
+
+    def getKernel(self):
+        """Return the kernel associated with this candidate."""
+        return self.kernel
+
+    def getRegion(self):
+        """Return the region (Polygon) associated with this candidate."""
+        return self.region
+
+    def isInRegion(self, point):
+        """Check if a given point (lsst.geom.Point2D) is inside the region."""
+        return self.region.contains(point)
+
+    def getChi2(self):
+        """Return a dummy chi-squared value for sorting candidates (if needed)."""
+        return 0.0

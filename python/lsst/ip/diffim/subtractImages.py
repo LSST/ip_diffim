@@ -27,8 +27,8 @@ import lsst.afw.geom as afwGeom
 import lsst.afw.image
 import lsst.afw.math
 import lsst.geom
-from lsst.ip.diffim.utils import evaluateMeanPsfFwhm, getPsfFwhm, divideExposureByPatches
-from lsst.meas.algorithms import ScaleVarianceTask, ScienceSourceSelectorTask
+from lsst.ip.diffim.utils import evaluateMeanPsfFwhm, getPsfFwhm, divideExposureByPatches, MyKernelSpatialCellCandidate
+from lsst.meas.algorithms import ScaleVarianceTask, ScienceSourceSelectorTask, SpatialCellSet, makeCoaddPsf
 import lsst.pex.config
 import lsst.pipe.base
 import lsst.pex.exceptions
@@ -487,6 +487,10 @@ class AlardLuptonSubtractTask(lsst.pipe.base.PipelineTask):
             matchedTemplate = np.zeros_like(science.image.array)
             difference = np.zeros_like(science.image.array)
             totalWeight = np.zeros_like(science.image.array)
+            # Create a SpatialCellSet with the desired cell size
+            cellSize = 128  # Adjust this value based on your image scale
+            spatialCellSet = SpatialCellSet(science.getBBox(), cellSize)
+            # Loop through the overlapping patches, from smallest to largest overlap
             for patch in patches:
                 patchCorners = patch.wcs.pixelToSky(lsst.geom.Box2D(patch.getInnerBBox()).getCorners())
                 patchPolygon = afwGeom.Polygon(template.wcs.skyToPixel(patchCorners))
@@ -501,10 +505,8 @@ class AlardLuptonSubtractTask(lsst.pipe.base.PipelineTask):
                 # boxS = science.getBBox()
                 # boxS = boxS.clippedTo(patchBBox)
                 if convolveTemplate:
-                    # self.metadata.add("convolvedExposure", "Template")
                     subtractResults = self.runConvolveTemplate(template, science, selectSources1)
                 else:
-                    # self.metadata.add("convolvedExposure", "Science")
                     subtractResults = self.runConvolveScience(template, science, selectSources1)
                 patchWeight = patchPolygon.createImage(template.getBBox())
                 patchWeightConvolved = lsst.afw.image.ImageF(template.getBBox())
@@ -518,6 +520,8 @@ class AlardLuptonSubtractTask(lsst.pipe.base.PipelineTask):
                 matchedTemplate += subtractResults.matchedTemplate.image.array*weight
                 difference += subtractResults.difference.image.array*weight
                 totalWeight += weight
+                candidate = MyKernelSpatialCellCandidate(patchPolygon, subtractResults.psfMatchingKernel)
+                spatialCellSet.insertCandidate(candidate)
             inds = totalWeight > 0
             matchedTemplate[inds] /= totalWeight[inds]
             difference[inds] /= totalWeight[inds]
@@ -525,6 +529,7 @@ class AlardLuptonSubtractTask(lsst.pipe.base.PipelineTask):
             difference[~inds] = subtractResults.difference.image.array[~inds]
             subtractResults.matchedTemplate.image.array = matchedTemplate
             subtractResults.difference.image.array = difference
+            subtractResults.psfMatchingKernel = makeCoaddPsf(spatialCellSet)
 
         except (RuntimeError, lsst.pex.exceptions.Exception) as e:
             self.log.warning("Failed to match template. Checking coverage")
@@ -566,6 +571,7 @@ class AlardLuptonSubtractTask(lsst.pipe.base.PipelineTask):
             ``psfMatchingKernel`` : `lsst.afw.math.Kernel`
                 Kernel used to PSF-match the template to the science image.
         """
+        self.metadata["convolvedExposure"] = "Template"
         try:
             kernelSources = self.makeKernel.selectKernelSources(template, science,
                                                                 candidateList=selectSources,
@@ -633,6 +639,7 @@ class AlardLuptonSubtractTask(lsst.pipe.base.PipelineTask):
             ``psfMatchingKernel`` : `lsst.afw.math.Kernel`
                Kernel used to PSF-match the science image to the template.
         """
+        self.metadata["convolvedExposure"] = "Science"
         bbox = science.getBBox()
         kernelSources = self.makeKernel.selectKernelSources(science, template,
                                                             candidateList=selectSources,
