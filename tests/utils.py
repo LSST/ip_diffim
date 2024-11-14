@@ -1066,6 +1066,7 @@ def _makeTruthSchema():
     schema.addField("base_PixelFlags_flag_saturated", "Flag", "testing flag.")
     schema.addField("base_PixelFlags_flag_bad", "Flag", "testing flag.")
     schema.addField("base_PixelFlags_flag_edge", "Flag", "testing flag.")
+    schema.addField("base_PixelFlags_flag_nodata", "Flag", "testing flag.")
     schema.addField("base_PsfFlux_flag", "Flag", "testing flag.")
     schema.addField("base_ClassificationSizeExtendedness_value", "Flag", "testing flag.")
     schema.addField("deblend_nChild", "Flag", "testing flag.")
