@@ -320,7 +320,7 @@ class PsfMatchConfigAL(PsfMatchConfig):
     alardMinSig = pexConfig.Field(
         dtype=float,
         doc="Used if `scaleByFwhm==True`, minimum sigma (pixels) for base Gaussians",
-        default=0.7,
+        default=0.5,
         check=lambda x: x >= 0.25
     )
     alardDegGaussDeconv = pexConfig.Field(
