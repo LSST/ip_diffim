@@ -115,15 +115,24 @@ class GetTemplateTask(pipeBase.PipelineTask):
 
     def runQuantum(self, butlerQC, inputRefs, outputRefs):
         inputs = butlerQC.get(inputRefs)
-        results = self.getOverlappingExposures(inputs)
-        del inputs["skyMap"]  # Only needed for the above.
-        inputs["coaddExposures"] = results.coaddExposures
-        inputs["dataIds"] = results.dataIds
-        inputs["physical_filter"] = butlerQC.quantum.dataId["physical_filter"]
-        outputs = self.run(**inputs)
+        bbox = inputs.pop("bbox")
+        wcs = inputs.pop("wcs")
+        coaddExposures = inputs.pop('coaddExposures')
+        skymap = inputs.pop("skyMap")
+
+        # This should not happen with a properly configured execution context.
+        assert not inputs, "runQuantum got more inputs than expected"
+
+        results = self.getOverlappingExposures(coaddExposures, bbox, skymap, wcs)
+        physical_filter = butlerQC.quantum.dataId["physical_filter"]
+        outputs = self.run(coaddExposures=results.coaddExposures,
+                           bbox=bbox,
+                           wcs=wcs,
+                           dataIds=results.dataIds,
+                           physical_filter=physical_filter)
         butlerQC.put(outputs, outputRefs)
 
-    def getOverlappingExposures(self, inputs):
+    def getOverlappingExposures(self, coaddExposures, bbox, skymap, wcs):
         """Return a data structure containing the coadds that overlap the
         specified bbox projected onto the sky, and a corresponding data
         structure of their dataIds.
@@ -136,19 +145,18 @@ class GetTemplateTask(pipeBase.PipelineTask):
 
         Parameters
         ----------
-        inputs : `dict` of task Inputs, containing:
-            - coaddExposures : `list` \
-                              [`lsst.daf.butler.DeferredDatasetHandle` of \
-                               `lsst.afw.image.Exposure`]
-                Data references to exposures that might overlap the desired
-                region.
-            - bbox : `lsst.geom.Box2I`
-                Template bounding box of the pixel geometry onto which the
-                coaddExposures will be resampled.
-            - skyMap : `lsst.skymap.SkyMap`
-                Geometry of the tracts and patches the coadds are defined on.
-            - wcs : `lsst.afw.geom.SkyWcs`
-                Template WCS onto which the coadds will be resampled.
+        coaddExposures : `list` \
+                          [`lsst.daf.butler.DeferredDatasetHandle` of \
+                           `lsst.afw.image.Exposure`]
+            Data references to exposures that might overlap the desired
+            region.
+        bbox : `lsst.geom.Box2I`
+            Template bounding box of the pixel geometry onto which the
+            coaddExposures will be resampled.
+        skyMap : `lsst.skymap.SkyMap`
+            Geometry of the tracts and patches the coadds are defined on.
+        wcs : `lsst.afw.geom.SkyWcs`
+            Template WCS onto which the coadds will be resampled.
 
         Returns
         -------
@@ -170,17 +178,16 @@ class GetTemplateTask(pipeBase.PipelineTask):
             Raised if no patches overlap the input detector bbox, or the input
             WCS is None.
         """
-        if (wcs := inputs['wcs']) is None:
+        if wcs is None:
             raise pipeBase.NoWorkFound("Exposure has no WCS; cannot create a template.")
 
         # Exposure's validPolygon would be more accurate
-        detectorPolygon = geom.Box2D(inputs['bbox'])
+        detectorPolygon = geom.Box2D(bbox)
         overlappingArea = 0
         coaddExposures = collections.defaultdict(list)
         dataIds = collections.defaultdict(list)
 
-        skymap = inputs['skyMap']
-        for coaddRef in inputs['coaddExposures']:
+        for coaddRef in coaddExposures:
             dataId = coaddRef.dataId
             patchWcs = skymap[dataId['tract']].getWcs()
             patchBBox = skymap[dataId['tract']][dataId['patch']].getOuterBBox()
@@ -199,7 +206,7 @@ class GetTemplateTask(pipeBase.PipelineTask):
                                dataIds=dataIds)
 
     @timeMethod
-    def run(self, coaddExposures, bbox, wcs, dataIds, physical_filter):
+    def run(self, *, coaddExposures, bbox, wcs, dataIds, physical_filter):
         """Warp coadds from multiple tracts and patches to form a template to
         subtract from a science image.
 
