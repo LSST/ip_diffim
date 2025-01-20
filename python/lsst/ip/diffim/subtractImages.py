@@ -865,6 +865,9 @@ class AlardLuptonSubtractTask(lsst.pipe.base.PipelineTask):
             remaining after source selection.
         """
 
+        # Ensure the source catalog is contiguous before making any cuts
+        if not sources.isContiguous():
+            sources = sources.copy(deep=True)
         selected = self.sourceSelector.selectSources(sources).selected
         nInitialSelected = np.count_nonzero(selected)
         selected *= self._checkMask(mask, sources, self.config.excludeMaskPlanes)
