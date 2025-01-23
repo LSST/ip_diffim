@@ -467,7 +467,7 @@ class GetDcrTemplateConfig(GetTemplateConfig,
         default=3,
     )
     effectiveWavelength = pexConfig.Field(
-        doc="Effective wavelength of the filter.",
+        doc="Effective wavelength of the filter in nm.",
         optional=False,
         dtype=float,
     )
