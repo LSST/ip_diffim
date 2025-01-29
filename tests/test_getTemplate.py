@@ -197,7 +197,7 @@ class GetTemplateTaskTestCase(lsst.utils.tests.TestCase):
         # Variance plane ==2 in the original image, but the warped images will
         # have some structure due to the warping.
         self.assertImagesAlmostEqual(template.variance, self.exposure[expectedBox].variance,
-                                     rtol=0.5, msg="variance planes differ")
+                                     rtol=0.55, msg="variance planes differ")
         # Not checking the mask, as warping changes the sizes of the masks.
 
     def testRunOneTractInput(self):
@@ -265,7 +265,7 @@ class GetTemplateTaskTestCase(lsst.utils.tests.TestCase):
         no_data = (result.template.mask.array & result.template.mask.getPlaneBitMask("NO_DATA")) != 0
         self.assertTrue(all(np.isnan(result.template.image.array[no_data])))
         self.assertTrue(all(np.isnan(result.template.variance.array[no_data])))
-        self.assertEqual(no_data.sum(), 22118)
+        self.assertEqual(no_data.sum(), 21548)
 
 
 def setup_module(module):

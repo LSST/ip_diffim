@@ -96,8 +96,15 @@ class GetTemplateConfig(pipeBase.PipelineTaskConfig,
     )
 
     def setDefaults(self):
-        self.warp.warpingKernelName = 'lanczos5'
-        self.coaddPsf.warpingKernelName = 'lanczos5'
+        # Use a smaller cache: per SeparableKernel.computeCache, this should
+        # give a warping error of a fraction of a count (these must match).
+        self.warp.cacheSize = 100000
+        self.coaddPsf.cacheSize = self.warp.cacheSize
+        # The WCS for LSST should be smoothly varying, so we can use a longer
+        # interpolation length for WCS evaluations.
+        self.warp.interpLength = 100
+        self.warp.warpingKernelName = 'lanczos3'
+        self.coaddPsf.warpingKernelName = self.warp.warpingKernelName
 
 
 class GetTemplateTask(pipeBase.PipelineTask):
