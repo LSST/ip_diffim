@@ -94,8 +94,7 @@ class MakeKernelTask(PsfMatchTask):
     _DefaultName = "makeALKernel"
 
     def __init__(self, *args, **kwargs):
-        PsfMatchTask.__init__(self, *args, **kwargs)
-        self.kConfig = self.config.kernel.active
+        super().__init__(*args, **kwargs)
         # the background subtraction task uses a config from an unusual location,
         # so cannot easily be constructed with makeSubtask
         self.background = SubtractBackgroundTask(config=self.kConfig.afwBackgroundConfig, name="background",
