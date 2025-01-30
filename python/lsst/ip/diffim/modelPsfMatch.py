@@ -293,6 +293,10 @@ class ModelPsfMatchTask(PsfMatchTask):
             dimenR = dimenS
 
         ps = pexConfig.makePropertySet(self.kConfig)
+        if self.kConfig.kernelBasisSet == "combined":
+            for field in set(dir(self.kConfig.psfMatchDF.value)) - set(dir(self.kConfig)):
+                ps.add(field, getattr(self.kConfig.psfMatchDF.value, field))
+
         for row in range(nCellY):
             # place at center of cell
             posY = sizeCellY*row + sizeCellY//2 + scienceY0

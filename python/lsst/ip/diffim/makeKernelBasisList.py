@@ -72,14 +72,24 @@ def makeKernelBasisList(config, targetFwhmPix=None, referenceFwhmPix=None,
         If ``config.kernelBasisSet`` has an invalid value (not "alard-lupton" or "delta-function").
     """
     if config.kernelBasisSet == "alard-lupton":
-        return generateAlardLuptonBasisList(config, targetFwhmPix=targetFwhmPix,
+        basis = generateAlardLuptonBasisList(config, targetFwhmPix=targetFwhmPix,
                                             referenceFwhmPix=referenceFwhmPix,
                                             basisDegGauss=basisDegGauss,
                                             basisSigmaGauss=basisSigmaGauss,
                                             metadata=metadata)
+        return basis, len(basis)
     elif config.kernelBasisSet == "delta-function":
         kernelSize = config.kernelSize
-        return diffimLib.makeDeltaFunctionBasisList(kernelSize, kernelSize)
+        return diffimLib.makeDeltaFunctionBasisList(kernelSize, kernelSize), config.kernelSize
+    elif config.kernelBasisSet == "combined":
+        basisAL = generateAlardLuptonBasisList(config.psfMatchAL, targetFwhmPix=targetFwhmPix,
+                                               referenceFwhmPix=referenceFwhmPix,
+                                               basisDegGauss=basisDegGauss,
+                                               basisSigmaGauss=basisSigmaGauss,
+                                               metadata=metadata)
+        kernelSize = config.psfMatchDF.kernelSize
+        basisDF = diffimLib.makeDeltaFunctionBasisList(kernelSize, kernelSize)
+        return basisAL+basisDF, (len(basisAL), len(basisDF))
     else:
         raise ValueError("Cannot generate %s basis set" % (config.kernelBasisSet))
 

@@ -525,6 +525,28 @@ class AlardLuptonSubtractTest(AlardLuptonSubtractTestBase, lsst.utils.tests.Test
                                            results_convolveScience.difference[bbox].maskedImage,
                                            atol=diffErr*5.)
 
+    def test_combined(self):
+        """Test the combined AL+DF psf matching kernel.
+        """
+        noiseLevel = .1
+        seed1 = 6
+        seed2 = 7
+        science1, sources1 = makeTestImage(psfSize=2.0, noiseLevel=noiseLevel, noiseSeed=seed1,
+                                           clearEdgeMask=True)
+        template1, _ = makeTestImage(psfSize=2.4, noiseLevel=noiseLevel, noiseSeed=seed2,
+                                     templateBorderSize=0, doApplyCalibration=True,
+                                     clearEdgeMask=True)
+        config = self.subtractTask.ConfigClass()
+        config.doSubtractBackground = False
+        config.sourceSelector.signalToNoise.fluxField = "truth_instFlux"
+        config.sourceSelector.signalToNoise.errField = "truth_instFluxErr"
+        config.makeKernel.kernel.name = "combined"
+        # config.makeKernel.kernel.name = "AL"
+        task = self.subtractTask(config=config)
+        lsst.utils.logging.trace_set_at("ip.diffim", 5)
+        results = task.run(template1, science1, sources1)
+        # TODO: need some asserts on the resulting diffim here!
+
     def test_background_subtraction(self):
         """Check that we can recover the background,
         and that it is subtracted correctly in the difference image.

@@ -71,7 +71,8 @@ class PsfMatchConfig(pexConfig.Config):
             "delta-function": """Delta-function kernel basis set,
                            * You may enable the option useRegularization
                            * You should seriously consider usePcaForSpatialKernel, which will also
-                             enable kernel sum conservation for the delta function kernels"""
+                             enable kernel sum conservation for the delta function kernels""",
+            "combined": """combination of AL+DF""",
         }
     )
     kernelSize = pexConfig.Field(
@@ -558,13 +559,18 @@ class PsfMatchTask(pipeBase.Task, abc.ABC):
         pipeBase.Task.__init__(self, *args, **kwargs)
         self.kConfig = self.config.kernel.active
 
-        if 'useRegularization' in self.kConfig:
+        if self.kConfig.kernelBasisSet == "combined":
+            self.useRegularization = True
+            config = self.kConfig.psfMatchDF.value
+        elif 'useRegularization' in self.kConfig:
             self.useRegularization = self.kConfig.useRegularization
+            config = self.kConfig
         else:
             self.useRegularization = False
+            config = self.kConfig
 
         if self.useRegularization:
-            self.hMat = diffimLib.makeRegularizationMatrix(pexConfig.makePropertySet(self.kConfig))
+            self.hMat = diffimLib.makeRegularizationMatrix(pexConfig.makePropertySet(config))
 
     def _diagnostic(self, kernelCellSet, spatialSolution, spatialKernel, spatialBg):
         """Provide logging diagnostics on quality of spatial kernel fit
@@ -819,6 +825,16 @@ class PsfMatchTask(pipeBase.Task, abc.ABC):
 
         # Visitor for the single kernel fit
         ps = pexConfig.makePropertySet(self.kConfig)
+        if self.kConfig.kernelBasisSet == "combined":
+            for field in set(dir(self.kConfig.psfMatchDF.value)) - set(dir(self.kConfig)):
+                ps.add(field, getattr(self.kConfig.psfMatchDF.value, field))
+
+            # Modify the regularization matrix to have an identity block for the AL-basis.
+            self.hMat = np.block([[np.identity(self.n_basis[0]),
+                                   np.zeros((self.n_basis[0], self.hMat.shape[1]))],
+                                  [np.zeros((self.hMat.shape[0], self.n_basis[0])),
+                                   self.hMat]])
+
         if self.useRegularization:
             singlekv = diffimLib.BuildSingleKernelVisitorF(basisList, ps, self.hMat)
         else:
@@ -949,3 +965,21 @@ class PsfMatchTask(pipeBase.Task, abc.ABC):
 
 
 PsfMatch = PsfMatchTask
+
+
+class PsfMatchConfigCombined(PsfMatchConfig):
+
+    def setDefaults(self):
+        PsfMatchConfig.setDefaults(self)
+        self.kernelBasisSet = "combined"
+
+    psfMatchAL = pexConfig.ConfigurableField(
+        ConfigClass=PsfMatchConfigAL,
+        target=PsfMatchTask,
+        doc="Alard-Lupton configuration",
+    )
+    psfMatchDF = pexConfig.ConfigurableField(
+        ConfigClass=PsfMatchConfigDF,
+        target=PsfMatchTask,
+        doc="Delta function configuration",
+    )

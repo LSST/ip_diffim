@@ -36,7 +36,8 @@ import lsst.pex.config
 import lsst.pipe.base
 
 from .makeKernelBasisList import makeKernelBasisList
-from .psfMatch import PsfMatchConfig, PsfMatchTask, PsfMatchConfigAL, PsfMatchConfigDF
+from .psfMatch import PsfMatchConfig, PsfMatchTask, PsfMatchConfigAL, \
+    PsfMatchConfigDF, PsfMatchConfigCombined
 
 from . import diffimLib
 from .utils import evaluateMeanPsfFwhm, getPsfFwhm
@@ -47,7 +48,8 @@ class MakeKernelConfig(PsfMatchConfig):
         doc="kernel type",
         typemap=dict(
             AL=PsfMatchConfigAL,
-            DF=PsfMatchConfigDF
+            DF=PsfMatchConfigDF,
+            combined=PsfMatchConfigCombined
         ),
         default="AL",
     )
@@ -370,7 +372,7 @@ class MakeKernelTask(PsfMatchTask):
         basisList: `list` of `lsst.afw.math.kernel.FixedKernel`
             List of basis kernels.
         """
-        basisList = makeKernelBasisList(self.kConfig,
+        basisList, self.n_basis = makeKernelBasisList(self.kConfig,
                                         targetFwhmPix=targetFwhmPix,
                                         referenceFwhmPix=referenceFwhmPix,
                                         basisDegGauss=basisDegGauss,
@@ -410,6 +412,10 @@ class MakeKernelTask(PsfMatchTask):
         kernelCellSet = lsst.afw.math.SpatialCellSet(imageBBox, sizeCellX, sizeCellY)
 
         candidateConfig = lsst.pex.config.makePropertySet(self.kConfig)
+        if self.kConfig.kernelBasisSet == "combined":
+            for field in set(dir(self.kConfig.psfMatchDF.value)) - set(dir(self.kConfig)):
+                candidateConfig.add(field, getattr(self.kConfig.psfMatchDF.value, field))
+
         # Place candidates within the spatial grid
         for candidate in candidateList:
             bbox = candidate.getFootprint().getBBox()
