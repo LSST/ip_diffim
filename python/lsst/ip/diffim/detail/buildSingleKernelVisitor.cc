@@ -69,6 +69,13 @@ void declareBuildSingleKernelVisitor(lsst::cpputils::python::WrapperCollection &
         cls.def("getNProcessed", &BuildSingleKernelVisitor<PixelT>::getNProcessed);
         cls.def("reset", &BuildSingleKernelVisitor<PixelT>::reset);
         cls.def("processCandidate", &BuildSingleKernelVisitor<PixelT>::processCandidate, "candidate"_a);
+        cls.def_property_readonly("nRejected", &BuildSingleKernelVisitor<PixelT>::getNRejected);
+        cls.def_property_readonly("nProcessed", &BuildSingleKernelVisitor<PixelT>::getNProcessed);
+        cls.def_property_readonly("useRegularization", &BuildSingleKernelVisitor<PixelT>::getUseRegularization);
+        cls.def_property_readonly("skipBuilt", &BuildSingleKernelVisitor<PixelT>::getSkipBuilt);
+        cls.def_property_readonly("useCoreStats", &BuildSingleKernelVisitor<PixelT>::getUseCoreStats);
+        cls.def_property_readonly("coreRadius", &BuildSingleKernelVisitor<PixelT>::getCoreRadius);
+        cls.def_property_readonly("propertySet", &BuildSingleKernelVisitor<PixelT>::getPropertySet);
 
         mod.def("makeBuildSingleKernelVisitor",
                 (std::shared_ptr<BuildSingleKernelVisitor<PixelT>>(*)(afw::math::KernelList const &,
