@@ -455,6 +455,12 @@ class PsfMatchTask(pipeBase.Task, abc.ABC):
     also performs background matching and returns the differential background model as an
     `lsst.afw.math.Kernel.SpatialFunction`.
 
+    The initialization sets the Psf-matching kernel configuration using the
+    value of self.config.kernel.active.  If the kernel is requested with
+    regularization to moderate the bias/variance tradeoff, currently only used
+    when a delta function kernel basis is provided, it creates a
+    regularization matrix stored as member variable self.hMat.
+
     **Invoking the Task**
 
     As a base class, this Task is not directly invoked.  However, ``run()`` methods that are
@@ -549,23 +555,6 @@ class PsfMatchTask(pipeBase.Task, abc.ABC):
     _DefaultName = "psfMatch"
 
     def __init__(self, *args, **kwargs):
-        """Create the psf-matching Task
-
-        Parameters
-        ----------
-        *args
-            Arguments to be passed to ``lsst.pipe.base.task.Task.__init__``
-        **kwargs
-            Keyword arguments to be passed to ``lsst.pipe.base.task.Task.__init__``
-
-        Notes
-        -----
-        The initialization sets the Psf-matching kernel configuration using the value of
-        self.config.kernel.active.  If the kernel is requested with regularization to moderate
-        the bias/variance tradeoff, currently only used when a delta function kernel basis
-        is provided, it creates a regularization matrix stored as member variable
-        self.hMat.
-        """
         pipeBase.Task.__init__(self, *args, **kwargs)
         self.kConfig = self.config.kernel.active
 
