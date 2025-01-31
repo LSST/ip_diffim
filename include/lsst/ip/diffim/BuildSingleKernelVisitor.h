@@ -56,6 +56,12 @@ namespace detail {
         int getNProcessed()   {return _nProcessed;}
         void reset()          {_nRejected = 0; _nProcessed = 0;}
 
+        std::shared_ptr<lsst::daf::base::PropertySet> getPropertySet() { return _ps; }
+        bool getSkipBuilt() { return _skipBuilt; }
+        bool getUseRegularization() { return _useRegularization; }
+        bool getUseCoreStats() { return _useCoreStats; }
+        int getCoreRadius() { return _coreRadius; }
+
         void processCandidate(lsst::afw::math::SpatialCellCandidate *candidate);
 
     private:
