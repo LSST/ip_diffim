@@ -526,13 +526,35 @@ class DetectAndMeasureTask(lsst.pipe.base.PipelineTask):
             footprints.setFootprints([src.getFootprint() for src in sources])
             return footprints
 
-        def deblend(footprints):
+        def deblend(footprints, negative=False):
             """Deblend a positive or negative footprint set,
             and return the deblended children.
+
+            Parameters
+            ----------
+            footprints : `lsst.afw.detection.FootprintSet`
+            negative : `bool`
+                Set True if the footprints contain negative fluxes
+
+            Returns
+            -------
+            sources : `lsst.afw.table.SourceCatalog`
             """
             sources = afwTable.SourceCatalog(self.schema)
             footprints.makeSources(sources)
-            self.deblend.run(exposure=difference, sources=sources)
+            if negative:
+                # Invert the image so the deblender can run on positive peaks
+                difference_inverted = difference.clone()
+                difference_inverted.image *= -1
+                self.deblend.run(exposure=difference_inverted, sources=sources)
+                children = sources[sources["parent"] != 0]
+                # Set the heavy footprint pixel values back to reality
+                for child in children:
+                    footprint = child.getFootprint()
+                    array = footprint.getImageArray()
+                    array *= -1
+            else:
+                self.deblend.run(exposure=difference, sources=sources)
             self.setPrimaryFlags.run(sources)
             children = sources["detect_isDeblendedSource"] == 1
             sources = sources[children].copy(deep=True)
@@ -541,7 +563,7 @@ class DetectAndMeasureTask(lsst.pipe.base.PipelineTask):
             return sources.copy(deep=True)
 
         positives = deblend(positiveFootprints)
-        negatives = deblend(negativeFootprints)
+        negatives = deblend(negativeFootprints, negative=True)
 
         sources = afwTable.SourceCatalog(self.schema)
         sources.reserve(len(positives) + len(negatives))
