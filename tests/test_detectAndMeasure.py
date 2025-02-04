@@ -305,9 +305,33 @@ class DetectAndMeasureTest(DetectAndMeasureTestBase, lsst.utils.tests.TestCase):
         kwargs["nSrc"] = 10
         kwargs["fluxLevel"] = 1000
 
+        blendedKwargs = kwargs
+        blendedKwargs["nSrc"] = 1
+
         # Run detection and check the results
         def _detection_wrapper(positive=True):
             transients, transientSources = makeTestImage(noiseLevel=noiseLevel, noiseSeed=8, **kwargs)
+            # Make a nearby transient source that doesn't fall off the image
+            # so we can test deblending
+            transientsBbox = transients.getBBox()
+            oneSourceX = transientSources[0].getX()
+            oneSourceY = transientSources[0].getY()
+            if oneSourceX < transientsBbox.getCenter()[0]:
+                blendedSourceX = oneSourceX + 10
+            else:
+                blendedSourceX = oneSourceX - 10
+            if oneSourceY < transientsBbox.getCenter()[1]:
+                blendedSourceY = oneSourceY + 10
+            else:
+                blendedSourceY = oneSourceY - 10
+            blendedTransients, blendedTransientSources = makeTestImage(noiseLevel=0,
+                                                                       noiseSeed=8,
+                                                                       xLoc=[blendedSourceX,],
+                                                                       yLoc=[blendedSourceY,],
+                                                                       **blendedKwargs)
+            blendedTransientSources["id"][0] = np.max(transientSources["id"]) + 1
+            transientSources.extend(blendedTransientSources)
+            transients.maskedImage += blendedTransients.maskedImage
             difference = science.clone()
             difference.maskedImage -= matchedTemplate.maskedImage
             if positive:
@@ -322,7 +346,7 @@ class DetectAndMeasureTest(DetectAndMeasureTestBase, lsst.utils.tests.TestCase):
             refIds = []
             scale = 1. if positive else -1.
             for diaSource in output.diaSources:
-                self._check_diaSource(transientSources, diaSource, refIds=refIds, scale=scale)
+                self._check_diaSource(transientSources.copy(deep=True), diaSource, refIds=refIds, scale=scale)
         _detection_wrapper(positive=True)
         _detection_wrapper(positive=False)
 
